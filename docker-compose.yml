@@ -1,0 +1,59 @@
+services:
+  face_api:
+    build:
+      context: ./face_api
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      # Models are stored on the host so they survive container rebuilds.
+      # Place inswapper_128.onnx inside ./face_api/models/ before starting.
+      - ./face_api/models:/app/models
+    environment:
+      - MODELS_DIR=/app/models
+    restart: unless-stopped
+    networks:
+      - cmeme
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Use the Docker service name — "localhost" doesn't work between containers
+      - BACKEND_URL=http://face_api:8001
+      # Clear the production flag so the watcher runs properly
+      - DENO_DEPLOYMENT_ID=
+    volumes:
+      # Mount the local source code to enable hot-reloading in dev
+      - ./frontend:/app
+    # Override the production CMD defined in the Dockerfile with the dev watcher
+    command: ["deno", "task", "start"]
+    depends_on:
+      - face_api
+    restart: unless-stopped
+    networks:
+      - cmeme
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - frontend
+    networks:
+      - cmeme
+
+networks:
+  cmeme:
+    driver: bridge

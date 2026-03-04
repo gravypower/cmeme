@@ -1,0 +1,511 @@
+/* ============================================================
+   CMeme – Valiant Ute Theme
+   Inspired by the 1960s Australian Chrysler Valiant Ute:
+   · Dusty powder blue body
+   · Chrome silver trim
+   · Dark asphalt / charcoal background
+   · Bold retro Oswald typography
+   · Clean angular panels — less radius, more muscle
+   ============================================================ */
+
+:root {
+  /* Palette — pulled straight from the car */
+  --bg:            #0E1318;          /* Asphalt / night road */
+  --bg-2:          #141B23;
+  --surface:       #1B2430;          /* Dark steel panel */
+  --surface-2:     #212E3D;          /* Lighter panel */
+  --surface-3:     #263545;
+
+  --valiant:       #6B9EC2;          /* The car's exact powder blue */
+  --valiant-light: #8DBBDA;
+  --valiant-dark:  #4A7DA5;
+  --valiant-glow:  rgba(107,158,194,0.2);
+
+  --chrome:        #C4CAD0;          /* Chrome trim */
+  --chrome-light:  #E8EAEC;
+  --chrome-dark:   #7A8894;
+  --chrome-border: rgba(196,202,208,0.18);
+
+  --cream:         #C8B89A;          /* Warm interior leather */
+  --success:       #5BA890;          /* Muted teal */
+  --error:         #C05A52;          /* Muted red */
+
+  --text:          #DDE2E8;          /* Chrome-tinted white */
+  --text-muted:    #7A8894;
+  --text-faint:    #35434F;
+
+  --border:        rgba(196,202,208,0.12);
+  --border-hover:  rgba(107,158,194,0.45);
+
+  /* Fonts */
+  --font-head: 'Oswald', 'Impact', sans-serif;   /* Bold retro */
+  --font:      'Inter', system-ui, sans-serif;    /* Clean body  */
+
+  /* Shape — angular like the car's lines */
+  --radius:    6px;
+  --radius-sm: 3px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* Subtle asphalt texture via repeating gradient */
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.012) 0px,
+    rgba(255,255,255,0.012) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+/* ── Utility ── */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ── App Shell ── */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── Header ── */
+.header {
+  background: var(--bg-2);
+  border-bottom: 2px solid var(--valiant-dark);  /* Blue accent line like a pinstripe */
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+.header-inner {
+  max-width: 1100px; margin: 0 auto;
+  padding: 14px 24px;
+  display: flex; align-items: center; gap: 20px;
+}
+.logo { display: flex; align-items: center; gap: 12px; text-decoration: none; flex-shrink: 0; }
+.logo-icon { font-size: 1.8rem; }
+
+.logo-text {
+  font-family: var(--font-head);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chrome-light);
+}
+.logo-accent {
+  /* Chrome-to-blue gradient — like a badge on the bonnet */
+  background: linear-gradient(180deg, var(--chrome-light) 0%, var(--valiant) 60%, var(--valiant-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.header-tagline {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Main ── */
+.main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 32px 24px; }
+
+/* ── Wizard ── */
+.swap-wizard { display: flex; flex-direction: column; gap: 24px; }
+
+/* ── Step Indicator ── */
+.step-indicator {
+  display: flex; align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius);
+  padding: 0 8px;
+  overflow: hidden;
+}
+.step {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px;
+  flex-shrink: 0;
+}
+.step-active { background: rgba(107,158,194,0.1); }
+
+.step-num {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-size: 0.9rem; font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 2px solid var(--text-faint);
+  color: var(--text-faint);
+  flex-shrink: 0;
+  transition: all 0.25s;
+}
+.step-active .step-num {
+  border-color: var(--valiant); color: var(--valiant);
+  background: rgba(107,158,194,0.15);
+  box-shadow: 0 0 12px var(--valiant-glow);
+}
+.step-done .step-num {
+  border-color: var(--success); color: var(--success);
+  background: rgba(91,168,144,0.15);
+}
+.step-label {
+  font-family: var(--font-head);
+  font-size: 0.85rem; font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.25s;
+}
+.step-active .step-label { color: var(--valiant); }
+.step-done .step-label { color: var(--success); }
+
+.step-line {
+  flex: 1; height: 1px; min-width: 20px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.step-line-done { background: var(--success); }
+
+/* ── Stage Panel ── */
+.stage-panel {
+  background: var(--surface);
+  border: 1px solid var(--chrome-border);
+  /* Chrome top pinstripe */
+  border-top: 3px solid var(--valiant);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: slide-in 0.2s ease;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stage-header { padding: 22px 24px 0; }
+.stage-title {
+  font-family: var(--font-head);
+  font-size: 1.5rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--chrome-light);
+  margin-bottom: 4px;
+}
+.stage-subtitle { font-size: 0.85rem; color: var(--text-muted); }
+
+/* ── Browse Stage ── */
+.browse-stage { display: flex; flex-direction: column; }
+
+/* ── Last Meme Banner ── */
+.last-meme-banner {
+  display: flex; align-items: stretch; gap: 20px;
+  margin: 20px 24px 0;
+  padding: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+  animation: slide-in 0.3s ease;
+}
+.last-meme-img {
+  width: 120px; height: 120px; object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--chrome-border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.last-meme-content {
+  display: flex; flex-direction: column; justify-content: center;
+  flex: 1; min-width: 0;
+}
+.last-meme-title {
+  font-family: var(--font-head);
+  font-size: 1.1rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--success);
+  margin-bottom: 2px;
+}
+.last-meme-subtitle {
+  font-size: 0.82rem; color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.last-meme-actions { display: flex; align-items: center; gap: 10px; }
+@media (max-width: 500px) {
+  .last-meme-banner { flex-direction: column; align-items: center; text-align: center; }
+  .last-meme-actions { justify-content: center; }
+}
+
+.browse-tabs {
+  display: flex; gap: 0;
+  padding: 16px 24px 0;
+  border-bottom: 1px solid var(--chrome-border);
+  margin-top: 14px;
+}
+.tab-btn {
+  font-family: var(--font-head);
+  font-size: 0.82rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 10px 22px;
+  border: none; border-bottom: 3px solid transparent;
+  background: transparent; color: var(--text-muted);
+  cursor: pointer; transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--chrome-light); }
+.tab-btn.active { color: var(--valiant); border-bottom-color: var(--valiant); }
+
+/* ── Browse Tab Panel ── */
+.browse-tab-panel { display: flex; flex-direction: column; }
+.browse-search-row { padding: 14px 24px; border-bottom: 1px solid var(--border); }
+
+.meme-grid-scroll {
+  height: 440px; overflow-y: auto;
+  padding: 18px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--chrome-dark) transparent;
+}
+.grid-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; height: 200px; color: var(--text-muted);
+  font-family: var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.85rem;
+}
+.grid-loading .spinner { border-color: rgba(107,158,194,0.3); border-top-color: var(--valiant); }
+.grid-empty { text-align: center; color: var(--text-muted); padding: 80px 0; font-family: var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ── Meme Grid ── */
+.meme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+
+.meme-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 6px; border-radius: var(--radius-sm);
+  border: 1px solid var(--chrome-border);
+  background: var(--surface-2);
+  cursor: pointer; font-family: var(--font); text-align: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.meme-card:hover {
+  border-color: var(--valiant); background: var(--surface-3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(107,158,194,0.2), inset 0 0 0 1px rgba(107,158,194,0.1);
+}
+.meme-thumb {
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-sm); display: block; background: var(--surface);
+}
+.meme-name {
+  font-size: 0.68rem; font-weight: 500; color: var(--text-muted); line-height: 1.3;
+  overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+}
+.meme-edit-hint { font-size: 0.62rem; color: var(--valiant); opacity: 0.8; }
+
+/* ── Memegen Config ── */
+.config-topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 24px; border-bottom: 1px solid var(--chrome-border);
+}
+.config-tpl-name {
+  font-family: var(--font-head); font-size: 1rem;
+  font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--chrome-light);
+}
+.config-hint { font-size: 0.8rem; color: var(--text-muted); }
+
+.memegen-config-layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px;
+  height: 440px; overflow-y: auto;
+}
+@media (max-width: 600px) { .memegen-config-layout { grid-template-columns: 1fr; height: auto; } }
+
+.config-preview-col { display: flex; align-items: flex-start; justify-content: center; }
+.config-preview-img {
+  width: 100%; max-height: 340px; object-fit: contain;
+  border-radius: var(--radius-sm); border: 1px solid var(--chrome-border);
+  background: var(--surface-2);
+}
+.config-inputs-col { display: flex; flex-direction: column; gap: 16px; }
+.config-field { display: flex; flex-direction: column; gap: 6px; }
+.config-label {
+  font-family: var(--font-head); font-size: 0.72rem; font-weight: 600;
+  color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* ── Inputs ── */
+.search-input {
+  width: 100%; padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--chrome-border);
+  background: var(--surface-2); color: var(--text);
+  font-family: var(--font); font-size: 0.875rem;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-input:focus {
+  border-color: var(--valiant); box-shadow: 0 0 0 2px var(--valiant-glow);
+}
+.search-input::placeholder { color: var(--text-faint); }
+
+/* ── Face Stage ── */
+.face-stage { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+.face-stage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media (max-width: 680px) { .face-stage-grid { grid-template-columns: 1fr; } }
+.face-stage-meme, .face-stage-upload { display: flex; flex-direction: column; gap: 10px; }
+.zone-label {
+  font-family: var(--font-head); font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+}
+.meme-preview-box {
+  position: relative; border-radius: var(--radius-sm); overflow: hidden;
+  border: 1px solid var(--chrome-border); background: var(--surface-2);
+  min-height: 200px; display: flex; align-items: center; justify-content: center;
+}
+.meme-preview-img { width: 100%; max-height: 360px; object-fit: contain; display: block; }
+.meme-preview-loading {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2);
+}
+
+/* ── Upload Zone ── */
+.upload-zone {
+  position: relative; border: 2px dashed var(--chrome-border);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  min-height: 260px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; overflow: hidden;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--valiant); background: var(--surface-3);
+  box-shadow: 0 0 0 2px var(--valiant-glow), inset 0 0 20px rgba(107,158,194,0.04);
+}
+.upload-zone.has-preview { border-style: solid; border-color: var(--chrome-border); }
+.upload-zone.has-preview:hover { border-color: var(--valiant); }
+
+.upload-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 32px; text-align: center; pointer-events: none; user-select: none;
+}
+.upload-icon { font-size: 2.2rem; opacity: 0.4; }
+.upload-main-text { font-size: 0.9rem; color: var(--text-muted); }
+.upload-link { color: var(--valiant); font-weight: 600; }
+.upload-hint { font-size: 0.78rem; color: var(--text-faint); }
+.upload-preview { width: 100%; min-height: 260px; object-fit: contain; display: block; }
+.upload-overlay {
+  position: absolute; inset: 0; background: rgba(14,19,24,0.75);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+.upload-zone:hover .upload-overlay { opacity: 1; }
+.upload-change-text {
+  font-family: var(--font-head); font-size: 0.8rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--chrome-light);
+  background: rgba(107,158,194,0.2); padding: 8px 18px;
+  border-radius: var(--radius-sm); border: 1px solid var(--valiant);
+}
+
+/* ── Buttons ── */
+.back-btn {
+  font-family: var(--font-head); font-size: 0.75rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 7px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--chrome-border);
+  background: transparent; color: var(--text-muted);
+  cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.back-btn:hover { background: var(--surface-2); color: var(--chrome-light); border-color: var(--chrome-dark); }
+
+/* Chrome-effect button — for "Use This Meme" / Generate */
+.use-meme-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 24px; font-family: var(--font-head);
+  font-size: 0.9rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  /* Valiant blue body with chrome shimmer */
+  background: linear-gradient(180deg, var(--valiant-light) 0%, var(--valiant) 45%, var(--valiant-dark) 100%);
+  color: #0E1318;
+  transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+  box-shadow: 0 2px 12px rgba(107,158,194,0.3), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.use-meme-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(107,158,194,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* Swap button — the big CTA */
+.swap-action-row { display: flex; justify-content: center; }
+.swap-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 16px 60px;
+  font-family: var(--font-head); font-size: 1.1rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  background: linear-gradient(180deg, var(--valiant-light) 0%, var(--valiant) 40%, var(--valiant-dark) 100%);
+  color: #0A1018;
+  transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+  box-shadow:
+    0 4px 20px rgba(107,158,194,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
+}
+.swap-btn:hover:not(:disabled) {
+  transform: translateY(-2px); filter: brightness(1.08);
+  box-shadow: 0 8px 28px rgba(107,158,194,0.45), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+.swap-btn:active:not(:disabled) { transform: translateY(0); }
+.swap-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+.swap-btn.loading { opacity: 0.75; }
+
+/* ── Spinner ── */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(10,16,24,0.3); border-top-color: rgba(10,16,24,0.8);
+  border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Error Banner ── */
+.error-banner {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 18px;
+  border-radius: var(--radius-sm); background: rgba(192,90,82,0.1);
+  border: 1px solid rgba(192,90,82,0.3); color: #E8A29C; font-size: 0.875rem;
+}
+.error-icon { flex-shrink: 0; }
+
+/* ── Result Stage ── */
+.result-stage { padding: 24px; display: flex; flex-direction: column; gap: 20px; animation: slide-in 0.25s ease; }
+.result-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.result-title {
+  font-family: var(--font-head); font-size: 1.4rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--success);
+}
+.result-actions { display: flex; align-items: center; gap: 10px; }
+
+.download-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 24px; font-family: var(--font-head); font-size: 0.8rem;
+  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  border-radius: var(--radius-sm); border: 1px solid rgba(91,168,144,0.4);
+  background: rgba(91,168,144,0.12); color: #7DCBBB;
+  text-decoration: none; transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.download-btn:hover { background: rgba(91,168,144,0.22); border-color: rgba(91,168,144,0.7); transform: translateY(-1px); }
+
+.result-image-wrapper {
+  border-radius: var(--radius-sm); overflow: hidden;
+  border: 1px solid var(--chrome-border);
+  background: var(--surface-2);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+.result-image { width: 100%; display: block; max-height: 640px; object-fit: contain; }
+
+/* ── Footer ── */
+.footer {
+  border-top: 1px solid var(--chrome-border);
+  text-align: center; padding: 18px;
+  font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-faint);
+}
