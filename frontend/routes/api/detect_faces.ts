@@ -4,18 +4,9 @@ const BACKEND_URL = Deno.env.get("BACKEND_URL") ?? "http://localhost:8001";
 
 export const handler: Handlers = {
   async POST(req) {
-    // Forward the multipart form data directly to the Python backend
     const formData = await req.formData();
-    
-    console.log("[Deno /swap] Received formData keys:");
-    for (const key of formData.keys()) {
-        console.log(" - ", key);
-    }
-    if (formData.has("face_map")) {
-        console.log("[Deno /swap] face_map value:", formData.get("face_map"));
-    }
 
-    const backendReq = new Request(`${BACKEND_URL}/swap`, {
+    const backendReq = new Request(`${BACKEND_URL}/detect_faces`, {
       method: "POST",
       body: formData,
     });
@@ -38,13 +29,11 @@ export const handler: Handlers = {
       );
     }
 
-    // Return the PNG bytes directly to the browser
-    const imageBytes = await backendRes.arrayBuffer();
-    return new Response(imageBytes, {
+    const data = await backendRes.json();
+    return new Response(JSON.stringify(data), {
       status: 200,
       headers: {
-        "Content-Type": "image/png",
-        "Content-Disposition": "inline; filename=swapped.png",
+        "Content-Type": "application/json",
       },
     });
   },

@@ -27,6 +27,7 @@ export default function Home() {
 
         {/* Main */}
         <main class="main">
+          {/* Ad slot top (Removed for UX) */}
           <SwapForm />
         </main>
 
