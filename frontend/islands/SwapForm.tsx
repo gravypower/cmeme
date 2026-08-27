@@ -306,6 +306,14 @@ function FaceStage(props: {
   // Maps a meme face index to a source face index. e.g. {0: 1, 1: 0}
   const faceMapping = useSignal<Record<number, number>>({});
 
+  // When there's exactly one meme face and one uploaded source face, map
+  // them automatically so the user doesn't have to click to assign it.
+  function autoMapIfSingleFace(numMemeFaces: number, numSourceFaces: number) {
+    if (numMemeFaces === 1 && numSourceFaces === 1) {
+      faceMapping.value = { 0: 0 };
+    }
+  }
+
   const swapping = useSignal(false);
   const error = useSignal<string | null>(null);
   const memeLoading = useSignal(true);
@@ -344,10 +352,7 @@ function FaceStage(props: {
         if (apiRes.ok) {
           const data = await apiRes.json();
           detectedFaces.value = data.faces || [];
-          // Auto-map if exactly one meme face and one source face exists
-          if (detectedFaces.value.length === 1 && faceFiles.value.length === 1) {
-            faceMapping.value = { 0: 0 };
-          }
+          autoMapIfSingleFace(detectedFaces.value.length, faceFiles.value.length);
         }
       } catch (err) {
         console.error("Face detection failed", err);
@@ -380,10 +385,7 @@ function FaceStage(props: {
         .then(blobs => {
           const files = blobs.map((blob, i) => new File([blob], `restored_face_${i}.jpeg`, { type: blob.type }));
           faceFiles.value = files;
-          // Auto-map if only 1 face loaded and 1 face detected
-          if (files.length === 1 && detectedFaces.value.length === 1) {
-              faceMapping.value = { 0: 0 };
-          }
+          autoMapIfSingleFace(detectedFaces.value.length, files.length);
           if (files.length > 0) {
               activeFaceIndex.value = 0;
           }
@@ -403,11 +405,7 @@ function FaceStage(props: {
       validatingFaces.value = true;
       error.value = null;
 
-      const newPreviews: string[] = [];
-      const newFiles: File[] = [];
-      let anyFailed = false;
-
-      for (const file of validFiles) {
+      const results = await Promise.all(validFiles.map(async (file) => {
           const formData = new FormData();
           formData.append("meme_file", file);
           try {
@@ -415,25 +413,30 @@ function FaceStage(props: {
               if (apiRes.ok) {
                   const data = await apiRes.json();
                   if (data.faces && data.faces.length > 0) {
-                      newFiles.push(file);
                       const dataUrl = await new Promise<string>((resolve) => {
                           const reader = new FileReader();
                           reader.onload = (e) => resolve(e.target?.result as string);
                           reader.readAsDataURL(file);
                       });
-                      newPreviews.push(dataUrl);
-                  } else {
-                      anyFailed = true;
-                      error.value = `No face detected in "${file.name}". Photo not added.`;
+                      return { file, dataUrl, error: null as string | null };
                   }
-              } else {
-                  anyFailed = true;
-                  error.value = `Error checking face in "${file.name}".`;
+                  return { file, dataUrl: null as string | null, error: `No face detected in "${file.name}". Photo not added.` };
               }
+              return { file, dataUrl: null as string | null, error: `Error checking face in "${file.name}".` };
           } catch (err) {
               console.error("Face detection failed", err);
-              anyFailed = true;
-              error.value = `Connection error checking "${file.name}".`;
+              return { file, dataUrl: null as string | null, error: `Connection error checking "${file.name}".` };
+          }
+      }));
+
+      const newPreviews: string[] = [];
+      const newFiles: File[] = [];
+      for (const result of results) {
+          if (result.dataUrl) {
+              newFiles.push(result.file);
+              newPreviews.push(result.dataUrl);
+          } else if (result.error) {
+              error.value = result.error;
           }
       }
 
@@ -444,12 +447,10 @@ function FaceStage(props: {
           const updatedFiles = [...faceFiles.value, ...newFiles];
           facePreviews.value = updatedPreviews;
           faceFiles.value = updatedFiles;
-          
+
           activeFaceIndex.value = updatedFiles.length - newFiles.length;
-          
-          if (updatedFiles.length === 1 && detectedFaces.value.length === 1) {
-              faceMapping.value = { 0: 0 };
-          }
+
+          autoMapIfSingleFace(detectedFaces.value.length, updatedFiles.length);
 
           props.onFaceChange(updatedFiles, updatedPreviews);
       }
