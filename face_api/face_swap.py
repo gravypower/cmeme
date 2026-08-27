@@ -1,4 +1,5 @@
 import os
+import time
 import urllib.request
 import cv2
 import numpy as np
@@ -114,8 +115,10 @@ def _detect_anime_faces(img_bgr: np.ndarray) -> list:
             dtype=np.float32,
         )
 
-        # Create a minimal duck-typed Face object
-        face = type("AnimeFace", (), {"bbox": bbox, "kps": kps, "det_score": 0.5, "is_manual": True})()
+        # Create a minimal duck-typed Face object. Unlike hand-drawn manual
+        # boxes, these still go through the real neural swapper — is_manual
+        # is intentionally not set here.
+        face = type("AnimeFace", (), {"bbox": bbox, "kps": kps, "det_score": 0.5})()
         faces.append(face)
 
     return faces
@@ -141,21 +144,49 @@ def encode_image(img: np.ndarray, fmt: str = ".png") -> bytes:
 
 
 # ── In-Memory Caching ─────────────────────────────────────────────────────────
+#
+# Faces are cached only transiently, to avoid re-running detection between the
+# /detect_faces preview call and the /swap call for the same upload. Per the
+# no-retention privacy policy, an entry is discarded as soon as a swap using
+# it completes (see `_discard_cached_faces`), and is never kept longer than
+# `_CACHE_TTL_SECONDS` regardless, in case a preview is never followed by a
+# swap.
 
 _mem_cache = {}
+_CACHE_TTL_SECONDS = 300
+_CACHE_MAX_ENTRIES = 500
+
+def _prune_expired_cache(now: float) -> None:
+    expired = [h for h, (_, ts) in _mem_cache.items() if now - ts > _CACHE_TTL_SECONDS]
+    for h in expired:
+        _mem_cache.pop(h, None)
 
 def _get_cached_faces(meme_data: bytes):
-    """Return cached faces for the given image bytes, or None if not cached."""
+    """Return cached faces for the given image bytes, or None if not cached/expired."""
     h = hashlib.md5(meme_data).hexdigest()
-    return _mem_cache.get(h)
+    entry = _mem_cache.get(h)
+    if entry is None:
+        return None
+    faces, ts = entry
+    if time.time() - ts > _CACHE_TTL_SECONDS:
+        _mem_cache.pop(h, None)
+        return None
+    return faces
 
 def _set_cached_faces(meme_data: bytes, faces: list):
-    """Save detected faces to the in-memory cache."""
-    # Prevent unbounded growth by keeping it small
-    if len(_mem_cache) > 500:
-        _mem_cache.clear()
+    """Save detected faces to the in-memory cache, briefly and with bounded size."""
+    now = time.time()
+    _prune_expired_cache(now)
+    if len(_mem_cache) >= _CACHE_MAX_ENTRIES:
+        oldest_hash = min(_mem_cache, key=lambda h: _mem_cache[h][1])
+        _mem_cache.pop(oldest_hash, None)
     h = hashlib.md5(meme_data).hexdigest()
-    _mem_cache[h] = faces
+    _mem_cache[h] = (faces, now)
+
+def _discard_cached_faces(meme_data: bytes) -> None:
+    """Evict a meme's cached face data once a swap using it has completed."""
+    h = hashlib.md5(meme_data).hexdigest()
+    _mem_cache.pop(h, None)
 
 def _get_meme_faces(meme_data: bytes, face_analyser) -> list:
     """Get faces from cache, or detect and cache them."""
@@ -267,17 +298,24 @@ def swap_faces(meme_data: bytes, face_data_list: list[bytes], face_map: dict[str
     result = meme_img.copy()
 
     # ── Swap logic ─────────────────────────────────────────────────────────────
-    if face_map:
+    if face_map is not None:
         print(f"[face_swap] Entering MULTI-FACE MAPPING MODE with face_map: {face_map}", flush=True)
-        # Multi-face mapping mode
+        # Multi-face mapping mode. An empty face_map ({}) is valid here and
+        # means "leave every face untouched" — it must NOT fall through to
+        # the random-assignment fallback below.
         for m_idx_str, s_idx in face_map.items():
             print(f"[face_swap] Swapping meme face {m_idx_str} with source face {s_idx}", flush=True)
-            m_idx = int(m_idx_str)
+            try:
+                m_idx = int(m_idx_str)
+            except (TypeError, ValueError):
+                raise ValueError(f"Meme face index {m_idx_str!r} is not a valid integer.")
+            if not isinstance(s_idx, int) or isinstance(s_idx, bool):
+                raise ValueError(f"Source face index {s_idx!r} for meme face {m_idx} must be an integer.")
             if m_idx < 0 or m_idx >= len(meme_faces):
                 raise ValueError(f"Meme face index {m_idx} out of bounds.")
             if s_idx < 0 or s_idx >= len(source_faces):
                 raise ValueError(f"Source face index {s_idx} out of bounds.")
-            
+
             meme_face = meme_faces[m_idx]
             src_face = source_faces[s_idx]
             
@@ -287,10 +325,9 @@ def swap_faces(meme_data: bytes, face_data_list: list[bytes], face_map: dict[str
                 result = swapper.get(result, meme_face, src_face, paste_back=True)
             
     else:
-        print("[face_swap] Entering SINGLE FALLBACK MODE because face_map was falsey", flush=True)
+        print("[face_swap] Entering SINGLE FALLBACK MODE because no face_map was provided", flush=True)
         # Old mode: apply the first source face to all (or one) meme face
-        
-        target_meme_faces = meme_faces
+
         if target_face_index is not None:
             if target_face_index < 0 or target_face_index >= len(meme_faces):
                 raise ValueError(f"target_face_index {target_face_index} is out of bounds for {len(meme_faces)} detected faces.")
@@ -342,6 +379,10 @@ def swap_faces(meme_data: bytes, face_data_list: list[bytes], face_map: dict[str
                         result = _replace_and_blend_face(result, meme_face, src_face)
                     else:
                         result = swapper.get(result, meme_face, src_face, paste_back=True)
+
+    # Per the no-retention privacy policy, discard this meme's cached face
+    # data now that the swap using it has completed.
+    _discard_cached_faces(meme_data)
 
     return encode_image(result)
 
@@ -408,7 +449,7 @@ def _replace_and_blend_face(meme_img: np.ndarray, meme_face, src_face) -> np.nda
         res[my1:my2, mx1:mx2] = roi * (1 - alpha_3d) + resized_crop * alpha_3d
         
         return res
-        
+
     except Exception as e:
         print(f"[face_swap] replace_and_blend_face fallback failed: {e}", flush=True)
-        return meme_img
+        raise RuntimeError(f"Failed to blend face onto meme: {e}") from e
