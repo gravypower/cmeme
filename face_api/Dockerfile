@@ -1,25 +1,19 @@
-FROM python:3.11-slim
-
-# Install OS-level dependencies required by OpenCV and InsightFace
-RUN apt-get update && apt-get install -y \
-    libgl1 \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install Python dependencies
+# ORT_PACKAGE lets docker-compose.gpu.yml swap in the CUDA build
+# ("onnxruntime-gpu[cuda,cudnn]" bundles the CUDA libraries as pip wheels).
+ARG ORT_PACKAGE=onnxruntime
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN grep -v '^onnxruntime' requirements.txt > /tmp/requirements.txt \
+    && pip install --no-cache-dir -r /tmp/requirements.txt "${ORT_PACKAGE}"
 
-# Copy application source
 COPY . .
 
-# Create models directory (will be populated via volume mount)
+# Models live in a volume so they survive rebuilds; missing core models are
+# downloaded at startup.
+ENV MODELS_DIR=/app/models
 RUN mkdir -p /app/models
 
 EXPOSE 8001

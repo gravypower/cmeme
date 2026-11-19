@@ -6,11 +6,7 @@ export default function Home() {
     <>
       <Head>
         <title>CMeme – AI Meme Face Swapper</title>
-        <meta name="description" content="Replace faces in any meme with someone else's face using AI. Powered by InsightFace." />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="/styles.css" />
+        <meta name="description" content="Swap faces into any meme with a choice of AI face-swap, restoration and upscaling models." />
       </Head>
 
       <div class="app">
@@ -21,19 +17,18 @@ export default function Home() {
               <span class="logo-icon">😂</span>
               <span class="logo-text">C<span class="logo-accent">Meme</span></span>
             </div>
-            <p class="header-tagline">AI Meme Face Swapper — powered by InsightFace</p>
+            <p class="header-tagline">AI Meme Face Swapper</p>
           </div>
         </header>
 
         {/* Main */}
         <main class="main">
-          {/* Ad slot top (Removed for UX) */}
           <SwapForm />
         </main>
 
         {/* Footer */}
         <footer class="footer">
-          <p>Built with 🦕 Deno Fresh + 🐍 Python InsightFace</p>
+          <p>Built with 🦕 Deno Fresh + 🐍 ONNX Runtime · <a href="/tos">Terms</a></p>
         </footer>
       </div>
     </>

@@ -1,0 +1,9 @@
+# Hot-reloading frontend for development:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+services:
+  frontend:
+    environment:
+      - DENO_DEPLOYMENT_ID=
+    volumes:
+      - ./frontend:/app
+    command: ["deno", "task", "start"]

@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
-insightface
-onnxruntime
+onnxruntime>=1.20
+onnx
 opencv-python-headless
 numpy
 python-multipart

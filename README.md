@@ -1,118 +1,123 @@
 # CMeme – AI Meme Face Swapper
 
-Replace faces in any meme with someone else's face, powered by **InsightFace** and **Deno Fresh**.
+Put anyone's face into any meme. Pick a popular meme, caption a template or
+upload your own image, add one or more face photos, and choose which face goes
+where. A choice of swap, restoration and upscaling models controls the quality.
 
 ```
 ┌─────────────────────────────┐
-│   Deno Fresh  (port 8000)   │  ← frontend
-│   routes/api/swap.ts proxy  │
+│   Deno Fresh  (port 8000)   │  ← UI + thin proxy (routes/api/*)
 └──────────┬──────────────────┘
-           │ POST /swap (multipart)
+           │ multipart / JSON
            ▼
 ┌─────────────────────────────┐
-│   Python FastAPI (port 8001)│  ← Docker
-│   InsightFace inswapper_128 │
+│  Python FastAPI (port 8001) │  ← ONNX Runtime pipeline
+│  detect → swap → restore →  │
+│  upscale                    │
 └─────────────────────────────┘
 ```
 
----
+## Models
 
-## Prerequisites
+Everything runs locally on ONNX Runtime. The three core models are downloaded
+automatically on first start (~700 MB); the rest are optional and are fetched
+when you click **Download** next to them in the *Models & quality* panel.
 
-| Tool | Version |
-|------|---------|
-| Deno | 1.40+ |
-| Docker Desktop | any recent |
+| Kind | Models | What it does |
+|------|--------|--------------|
+| Face detection | SCRFD 10G, anime-face cascade (fallback) | Finds faces; you can also draw boxes by hand |
+| Face swap | **InSwapper 128** (default), InSwapper 128 FP16, HyperSwap 1A/1B/1C 256, SimSwap 256 | Replaces the identity of a face |
+| Face restoration | GFPGAN 1.4, CodeFormer, GPEN-BFR 512, RestoreFormer++ | Sharpens the swapped face (adjustable strength) |
+| Occlusion mask | XSeg | Keeps hands, glasses, hair or text in front of the face |
+| Upscaling | Real-ESRGAN ×2 / ×4 | Enlarges the finished meme |
 
----
+Hand-drawn boxes and cartoon faces have no landmarks to swap onto, so the
+source face is aligned and blended into the box instead.
 
-## Step 1 — Download the inswapper model
+> **Licences:** most of these weights (InSwapper, the InsightFace detector and
+> recogniser, SimSwap, CodeFormer, GPEN, HyperSwap) are released for
+> **non-commercial / research use only**. Check each model's licence before
+> running this as a public or monetised service.
 
-Run the included download script — it will create `face_api/models/` and download the ~500 MB model automatically:
-
-```powershell
-cd c:\projects\cmeme
-.\download_model.ps1
-```
-
-It skips the download if the file already exists, so it's safe to run again.
-
----
-
-## Step 2 — Start everything with Docker Compose
+## Run with Docker
 
 ```powershell
-cd c:\projects\cmeme
 docker compose up --build
 ```
 
-On first build Docker will download the Deno image and install Python packages — this takes a few minutes.  
-On subsequent starts it's fast.
+Open **http://localhost:8000**. Models are stored in `face_api/models/` on the
+host, so they survive rebuilds.
 
-| Service | URL | Purpose |
-|---------|-----|---------|
-| 🦕 Frontend | **http://localhost:8000** | ← Open this |
-| 🐍 API health | http://localhost:8001/health | Backend check |
-| 🐍 API docs | http://localhost:8001/docs | Swagger UI |
+| Variant | Command |
+|---------|---------|
+| NVIDIA GPU | `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build` |
+| Frontend hot reload | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build` |
+| Public Cloudflare Tunnel | copy `.env.example` to `.env`, set the token, then `docker compose --profile tunnel up` |
 
----
+## Run without Docker
 
-## Using CMeme
+Needs Python 3.10+ and Deno 2.
 
-1. Upload a **meme image** (JPEG/PNG/WebP, max 20 MB) — the faces in this image will be replaced
-2. Upload a **face source image** — the first detected face is used as the replacement
-3. Click **✨ Swap Faces!**
-4. Download the result with the **⬇ Download** button
+```powershell
+# Backend
+cd face_api
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\python -m uvicorn main:app --port 8001
 
----
+# Frontend (second terminal)
+cd frontend
+deno task start
+```
 
-## GPU Acceleration (optional)
+For an NVIDIA GPU without Docker, install `onnxruntime-gpu[cuda,cudnn]`
+instead of `onnxruntime`.
 
-If you have an **NVIDIA GPU** with nvidia-docker installed:
+## Configuration
 
-1. In `face_api/requirements.txt`, change:
-   ```
-   onnxruntime
-   ```
-   to:
-   ```
-   onnxruntime-gpu
-   ```
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `BACKEND_URL` (frontend) | `http://localhost:8001` | Where the proxy sends requests |
+| `MODELS_DIR` | `face_api/models` | Where model files are stored |
+| `ALLOW_MODEL_DOWNLOAD` | `1` | Set `0` so the server never downloads models (recommended when public) |
+| `MAX_LOADED_MODELS` | `4` | Optional models kept in memory at once |
+| `ORT_PROVIDERS` | `auto` | Force ONNX Runtime providers, e.g. `CPUExecutionProvider` |
 
-2. In `docker-compose.yml`, add under the `face_api` service:
-   ```yaml
-   deploy:
-     resources:
-       reservations:
-         devices:
-           - driver: nvidia
-             count: all
-             capabilities: [gpu]
-   ```
+## API
 
-3. Rebuild: `docker compose up --build`
+Interactive docs: http://localhost:8001/docs
 
----
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /models` | Catalog with install status and download progress |
+| `POST /models/{id}/download` | Start downloading an optional model |
+| `POST /detect_faces` | Face boxes for an image (`purpose=meme` or `source`) |
+| `POST /swap` | Swap faces; options: `swap_model`, `enhancer`, `enhancer_blend`, `occlusion`, `upscaler`, `face_map`, `manual_faces` |
 
-## Project Structure
+## Tests
+
+```powershell
+cd face_api
+.venv\Scripts\pip install pytest
+.venv\Scripts\python -m pytest
+```
+
+## Project structure
 
 ```
 cmeme/
-├── docker-compose.yml
-├── README.md
-├── face_api/               ← Python backend (Docker)
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── main.py             ← FastAPI app
-│   ├── face_swap.py        ← InsightFace logic
-│   └── models/             ← Put inswapper_128.onnx here
-└── frontend/               ← Deno Fresh app
-    ├── deno.json
-    ├── routes/
-    │   ├── index.tsx       ← Main page
-    │   └── api/swap.ts     ← Proxy to Python
-    ├── islands/
-    │   └── SwapForm.tsx    ← Interactive UI
-    └── static/
-        └── styles.css
+├── docker-compose.yml          (+ .gpu.yml and .dev.yml overrides)
+├── face_api/                   ← Python backend
+│   ├── main.py                 ← FastAPI endpoints
+│   ├── pipeline.py             ← detect → assign → swap → restore → upscale
+│   ├── registry.py             ← model catalog, downloads, session cache
+│   ├── detection.py            ← SCRFD + ArcFace + cartoon fallback
+│   ├── processors.py           ← swappers, restorers, occluder, upscaler
+│   ├── geometry.py             ← alignment, masks, paste-back
+│   └── models/                 ← downloaded weights (gitignored)
+└── frontend/                   ← Deno Fresh app
+    ├── islands/SwapForm.tsx    ← the wizard
+    ├── components/             ← Browse / Face / Options / Result stages
+    ├── lib/                    ← client helpers + backend proxy
+    └── routes/api/             ← proxies to the Python API
 ```

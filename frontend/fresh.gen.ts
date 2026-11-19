@@ -5,14 +5,13 @@
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $api_detect_faces from "./routes/api/detect_faces.ts";
-import * as $api_joke from "./routes/api/joke.ts";
 import * as $api_memegen from "./routes/api/memegen.ts";
 import * as $api_memes from "./routes/api/memes.ts";
+import * as $api_models from "./routes/api/models.ts";
+import * as $api_models_id_download from "./routes/api/models/[id]/download.ts";
 import * as $api_swap from "./routes/api/swap.ts";
-import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $tos from "./routes/tos.tsx";
-import * as $Counter from "./islands/Counter.tsx";
 import * as $SwapForm from "./islands/SwapForm.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -21,16 +20,15 @@ const manifest = {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
     "./routes/api/detect_faces.ts": $api_detect_faces,
-    "./routes/api/joke.ts": $api_joke,
     "./routes/api/memegen.ts": $api_memegen,
     "./routes/api/memes.ts": $api_memes,
+    "./routes/api/models.ts": $api_models,
+    "./routes/api/models/[id]/download.ts": $api_models_id_download,
     "./routes/api/swap.ts": $api_swap,
-    "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/tos.tsx": $tos,
   },
   islands: {
-    "./islands/Counter.tsx": $Counter,
     "./islands/SwapForm.tsx": $SwapForm,
   },
   baseUrl: import.meta.url,

@@ -1,0 +1,14 @@
+# NVIDIA GPU acceleration (needs the NVIDIA Container Toolkit / Docker Desktop GPU support):
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+services:
+  face_api:
+    build:
+      args:
+        ORT_PACKAGE: "onnxruntime-gpu[cuda,cudnn]"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

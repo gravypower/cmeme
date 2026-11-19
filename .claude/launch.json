@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "face_api",
+      "runtimeExecutable": "face_api/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "main:app", "--app-dir", "face_api", "--port", "8001"],
+      "port": 8001
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": ["run", "-A", "--config", "frontend/deno.json", "frontend/dev.ts"],
+      "port": 8000
+    }
+  ]
+}

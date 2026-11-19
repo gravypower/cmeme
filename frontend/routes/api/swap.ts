@@ -1,51 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
-
-const BACKEND_URL = Deno.env.get("BACKEND_URL") ?? "http://localhost:8001";
+import { proxy } from "../../lib/backend.ts";
 
 export const handler: Handlers = {
-  async POST(req) {
-    // Forward the multipart form data directly to the Python backend
-    const formData = await req.formData();
-    
-    console.log("[Deno /swap] Received formData keys:");
-    for (const key of formData.keys()) {
-        console.log(" - ", key);
-    }
-    if (formData.has("face_map")) {
-        console.log("[Deno /swap] face_map value:", formData.get("face_map"));
-    }
-
-    const backendReq = new Request(`${BACKEND_URL}/swap`, {
-      method: "POST",
-      body: formData,
-    });
-
-    let backendRes: Response;
-    try {
-      backendRes = await fetch(backendReq);
-    } catch (_err) {
-      return new Response(
-        JSON.stringify({ error: "Could not reach the face-swap backend. Is Docker running?" }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!backendRes.ok) {
-      const detail = await backendRes.text();
-      return new Response(
-        JSON.stringify({ error: detail }),
-        { status: backendRes.status, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Return the PNG bytes directly to the browser
-    const imageBytes = await backendRes.arrayBuffer();
-    return new Response(imageBytes, {
-      status: 200,
-      headers: {
-        "Content-Type": "image/png",
-        "Content-Disposition": "inline; filename=swapped.png",
-      },
-    });
-  },
+  POST: (req) => proxy(req, "/swap"),
 };

@@ -1,3 +1,6 @@
 .env
 face_api/models/
+face_api/.venv/
+__pycache__/
+.pytest_cache/
 frontend/_fresh/

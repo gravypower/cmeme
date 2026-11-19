@@ -14,7 +14,7 @@ export default function App({ Component }: PageProps) {
           rel="stylesheet"
         />
         {/* Our stylesheet — loaded once here; index.tsx Head adds title/description on top */}
-        <link rel="stylesheet" href="/styles.css?v=2" />
+        <link rel="stylesheet" href="/styles.css?v=3" />
       </head>
       <body>
         <Component />
